@@ -62,7 +62,7 @@ class Base:
             setattr(self, k, v)
         await self.save(db_session)
 
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@database:5432/pinproject"
+SQLALCHEMY_DATABASE_URL = "mssql+pyodbc://sqladmin:MyPass123@yuklenchuk-server.database.windows.net:1433/pin-database?driver=ODBC+Driver+18+for+SQL+Server&encrypt=yes&trustservercertificate=no"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

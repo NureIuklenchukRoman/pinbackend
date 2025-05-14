@@ -8,6 +8,7 @@ from database import get_db
 import models
 import schemas
 from auth import get_current_user
+from schemas import Comment, CommentCreate, Tag, TagCreate
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,7 @@ async def create_pin(
     title: str = Form(...),
     description: Optional[str] = Form(None),
     image: UploadFile = File(...),
+    tags: Optional[str] = Form(None),  # Comma-separated list of tags
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -36,6 +38,7 @@ async def create_pin(
         with open(file_location, "wb+") as file_object:
             shutil.copyfileobj(image.file, file_object)
         
+        # Create the pin
         db_pin = models.Pin(
             title=title,
             description=description,
@@ -43,6 +46,20 @@ async def create_pin(
             owner_id=current_user.id
         )
         db.add(db_pin)
+        db.flush()  # Flush to get the pin ID
+        
+        # Process tags if provided
+        if tags:
+            tag_names = [tag.strip() for tag in tags.split(',') if tag.strip()]
+            for tag_name in tag_names:
+                # Get or create tag
+                db_tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
+                if not db_tag:
+                    db_tag = models.Tag(name=tag_name)
+                    db.add(db_tag)
+                    db.flush()
+                db_pin.tags.append(db_tag)
+        
         db.commit()
         db.refresh(db_pin)
         logger.info(f"Successfully created pin with ID: {db_pin.id}")
@@ -207,4 +224,59 @@ def delete_pin(
     
     db.delete(pin)
     db.commit()
-    return {"message": "Pin deleted successfully"} 
+    return {"message": "Pin deleted successfully"}
+
+@pin_router.get("/pins/{pin_id}/comments", response_model=List[Comment])
+def get_comments_for_pin(
+    pin_id: int,
+    db: Session = Depends(get_db)
+):
+    comments = db.query(models.Comment).filter(models.Comment.pin_id == pin_id).order_by(models.Comment.created_at.asc()).all()
+    return comments
+
+@pin_router.post("/pins/{pin_id}/comments", response_model=Comment)
+def create_comment_for_pin(
+    pin_id: int,
+    comment: CommentCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db_comment = models.Comment(
+        content=comment.content,
+        pin_id=pin_id,
+        user_id=current_user.id
+    )
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    return db_comment
+
+@pin_router.get("/tags/", response_model=List[Tag])
+def get_tags(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    tags = db.query(models.Tag).offset(skip).limit(limit).all()
+    return tags
+
+@pin_router.get("/pins/tag/{tag_name}", response_model=List[schemas.Pin])
+def get_pins_by_tag(
+    tag_name: str,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    tag = db.query(models.Tag).filter(models.Tag.name == tag_name).first()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    
+    pins = db.query(models.Pin).join(
+        models.pin_tags
+    ).join(
+        models.Tag
+    ).filter(
+        models.Tag.id == tag.id
+    ).offset(skip).limit(limit).all()
+    
+    return pins 

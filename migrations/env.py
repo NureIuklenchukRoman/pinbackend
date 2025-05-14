@@ -43,7 +43,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = "postgresql://postgres:postgres@database:5432/pinproject"
+    url = " mssql+pyodbc://sqladmin:MyPass123@yuklenchuk-server.database.windows.net:1433/pin-database?driver=ODBC+Driver+18+for+SQL+Server&encrypt=yes&trustservercertificate=no"
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -63,7 +63,7 @@ def run_migrations_online() -> None:
 
     """
     configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = "postgresql://postgres:postgres@database:5432/pinproject"
+    configuration["sqlalchemy.url"] = " mssql+pyodbc://sqladmin:MyPass123@yuklenchuk-server.database.windows.net:1433/pin-database?driver=ODBC+Driver+18+for+SQL+Server&encrypt=yes&trustservercertificate=no"
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
