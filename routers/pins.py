@@ -77,7 +77,7 @@ def get_pins(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    pins = db.query(models.Pin).offset(skip).limit(limit).all()
+    pins = db.query(models.Pin).order_by(models.Pin.created_at.desc()).offset(skip).limit(limit).all()
     return pins
 
 @pin_router.get("/pins/saved", response_model=List[schemas.PinWithSaveStatus])
@@ -94,7 +94,7 @@ def get_saved_pins(
         models.Pin.id == models.SavedPin.pin_id
     ).filter(
         models.SavedPin.user_id == current_user.id
-    ).all()
+    ).order_by(models.Pin.created_at.desc()).all()  # Added order_by
     
     # Create response data with owner information and save status
     response_data = []
@@ -257,7 +257,7 @@ def get_tags(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    tags = db.query(models.Tag).offset(skip).limit(limit).all()
+    tags = db.query(models.Tag).order_by(models.Tag.name).offset(skip).limit(limit).all()  # Added order_by
     return tags
 
 @pin_router.get("/pins/tag/{tag_name}", response_model=List[schemas.Pin])
@@ -277,6 +277,6 @@ def get_pins_by_tag(
         models.Tag
     ).filter(
         models.Tag.id == tag.id
-    ).offset(skip).limit(limit).all()
+    ).order_by(models.Pin.created_at.desc()).offset(skip).limit(limit).all()  # Added order_by
     
-    return pins 
+    return pins
