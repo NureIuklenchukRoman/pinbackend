@@ -22,7 +22,7 @@ app = FastAPI(title="PinProject API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Frontend URL
+    allow_origins=["https://lively-coast-0a3926503.6.azurestaticapps.net", "http://localhost:5173"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
